@@ -849,6 +849,38 @@ def api_apply_acl():
     socket.emit("log",{"msg":"⚡ ACL правила застосовано на R3 та R4","color":"#3fb950"})
     return jsonify({"message":"✅ ACL правила застосовано"})
 
+@app.route("/api/topology", methods=["POST"])
+def api_topology():
+    """
+    Accepts topology data pushed by gns3_topology_creator_v3.py.
+    Payload: {nodes: [...], edges: [...], project_id, project_name, timestamp}
+    """
+    from flask import request as req
+    data = req.get_json() or {}
+    topo = {
+        "nodes": data.get("nodes", []),
+        "edges": data.get("edges", []),
+    }
+    state["topology"] = topo
+    state["gns3_online"] = True
+    meta = {
+        "project_id":   data.get("project_id", ""),
+        "project_name": data.get("project_name", ""),
+        "timestamp":    data.get("timestamp", ""),
+        "node_count":   len(topo["nodes"]),
+        "edge_count":   len(topo["edges"]),
+    }
+    socket.emit("state_update", state)
+    socket.emit("log", {
+        "msg": (
+            f"🗺️  Topology updated from GNS3 creator: "
+            f"{meta['node_count']} nodes, {meta['edge_count']} links "
+            f"(project: {meta['project_name']})"
+        ),
+        "color": "#3fb950",
+    })
+    return jsonify({"status": "ok", **meta})
+
 @app.route("/api/reports")
 def api_reports():
     reports = []
