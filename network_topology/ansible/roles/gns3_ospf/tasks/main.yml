@@ -1,0 +1,99 @@
+---
+# Role: gns3_ospf
+# Завдання: налаштування OSPF на маршрутизаторах через GNS3 REST API (console)
+
+- name: "Завантажити project_id якщо не встановлено"
+  block:
+    - name: "Читаємо project_id з файлу"
+      slurp:
+        src: "/tmp/gns3_project_id.txt"
+      register: project_id_file_ospf
+
+    - name: "Встановити gns3_project_id з файлу"
+      set_fact:
+        gns3_project_id: "{{ project_id_file_ospf.content | b64decode | trim }}"
+  when: gns3_project_id is not defined
+  ignore_errors: true
+
+- name: "Отримати список вузлів для OSPF конфігурації"
+  uri:
+    url: "{{ gns3_url }}/projects/{{ gns3_project_id }}/nodes"
+    method: GET
+    return_content: true
+    status_code: [200]
+    headers:
+      Content-Type: "application/json"
+  register: ospf_nodes
+  ignore_errors: true
+
+- name: "Зібрати інформацію про маршрутизатори"
+  set_fact:
+    router_console_info: "{{ router_console_info | default({}) | combine({ item.name: { 'node_id': item.node_id, 'console': item.console | default(0), 'console_host': item.console_host | default('127.0.0.1'), 'status': item.status } }) }}"
+  loop: "{{ ospf_nodes.json }}"
+  when:
+    - ospf_nodes.status == 200
+    - item.name in ['R1','R2','R3','R4']
+  ignore_errors: true
+
+# ── Генерація конфігураційних файлів OSPF ───────────────────────────────────
+- name: "Створити директорію для OSPF конфігурацій"
+  file:
+    path: "/tmp/gns3_ospf_configs"
+    state: directory
+    mode: "0755"
+
+- name: "Генерувати OSPF конфігурацію для маршрутизатора {{ item.key }}"
+  template:
+    src: "ospf_config.j2"
+    dest: "/tmp/gns3_ospf_configs/{{ item.key }}_ospf.conf"
+    mode: "0644"
+  vars:
+    router_name: "{{ item.key }}"
+    router_ospf: "{{ item.value }}"
+  loop: "{{ gns3_ospf_config.routers | dict2items }}"
+  register: ospf_configs_generated
+
+- name: "Показати згенеровані OSPF конфігурації"
+  debug:
+    msg: "📄 OSPF конфіг для {{ item.item.key }}: /tmp/gns3_ospf_configs/{{ item.item.key }}_ospf.conf {{ '✅' if not item.changed else '🔄 оновлено' }}"
+  loop: "{{ ospf_configs_generated.results }}"
+
+# ── Надсилання OSPF конфігурацій через GNS3 API (file upload) ───────────────
+- name: "Завантажити OSPF конфігурацію для {{ item.key }} в GNS3 (якщо вузол існує)"
+  block:
+    - name: "Читаємо вміст OSPF конфіг файлу для {{ item.key }}"
+      slurp:
+        src: "/tmp/gns3_ospf_configs/{{ item.key }}_ospf.conf"
+      register: ospf_conf_content
+
+    - name: "Завантажити frr.conf для {{ item.key }} через GNS3 API"
+      uri:
+        url: "{{ gns3_url }}/projects/{{ gns3_project_id }}/nodes/{{ router_console_info[item.key].node_id }}/files/etc/frr/frr.conf"
+        method: POST
+        body: "{{ ospf_conf_content.content | b64decode }}"
+        return_content: true
+        status_code: [200, 201, 204]
+        headers:
+          Content-Type: "application/octet-stream"
+      register: upload_result
+      ignore_errors: true
+
+    - name: "Звіт про завантаження OSPF конфігу для {{ item.key }}"
+      debug:
+        msg: "🔧 OSPF конфіг для {{ item.key }}: {{ '✅ завантажено' if upload_result.status in [200,201,204] else '⚠️ помилка: ' + (upload_result.msg | default('unknown')) }}"
+  loop: "{{ gns3_ospf_config.routers | dict2items }}"
+  when:
+    - router_console_info is defined
+    - item.key in router_console_info
+    - router_console_info[item.key].status == 'started'
+  ignore_errors: true
+
+- name: "✅ Підсумок налаштування OSPF"
+  debug:
+    msg:
+      - "══════════════════════════════════════════"
+      - "🛣️  OSPF конфігурацію застосовано"
+      - "   Area: {{ gns3_ospf_config.area }}"
+      - "   Маршрутизатори: {{ gns3_ospf_config.routers | length }}"
+      - "   Конфіги збережено: /tmp/gns3_ospf_configs/"
+      - "══════════════════════════════════════════"

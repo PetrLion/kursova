@@ -1,0 +1,147 @@
+---
+# Role: gns3_nodes
+# Завдання: створення всіх вузлів топології (маршрутизатори, VPCS, сервери)
+
+# Завантаження project_id якщо не встановлено (з файлу або API)
+- name: "Завантажити project_id якщо не встановлено"
+  block:
+    - name: "Читаємо project_id з файлу"
+      slurp:
+        src: "/tmp/gns3_project_id.txt"
+      register: project_id_file
+      ignore_errors: true
+
+    - name: "Встановити gns3_project_id з файлу"
+      set_fact:
+        gns3_project_id: "{{ project_id_file.content | b64decode | trim }}"
+      when: project_id_file is succeeded
+  when: gns3_project_id is not defined
+
+- name: "Перевірити що project_id встановлено"
+  fail:
+    msg: "❌ gns3_project_id не встановлено. Спочатку запустіть роль gns3_project!"
+  when: gns3_project_id is not defined or gns3_project_id == ""
+
+# ── Маршрутизатори ──────────────────────────────────────────────────────────
+- name: "Створення маршрутизатора {{ item.name }}"
+  uri:
+    url: "{{ gns3_url }}/projects/{{ gns3_project_id }}/nodes"
+    method: POST
+    body_format: json
+    body:
+      name: "{{ item.name }}"
+      node_type: "{{ item.node_type }}"
+      compute_id: "{{ item.compute_id }}"
+      symbol: "{{ item.symbol | default(':/symbols/router.svg') }}"
+      x: "{{ item.x | default(0) }}"
+      y: "{{ item.y | default(0) }}"
+      properties: "{{ item.properties | default({}) }}"
+    return_content: true
+    status_code: [201, 200]
+    headers:
+      Content-Type: "application/json"
+  loop: "{{ gns3_routers }}"
+  register: created_routers
+  ignore_errors: true
+
+- name: "Зберегти ID маршрутизаторів"
+  set_fact:
+    router_node_ids: "{{ router_node_ids | default({}) | combine({ item.item.name: item.json.node_id }) }}"
+  loop: "{{ created_routers.results }}"
+  when: item.status in [200, 201]
+  ignore_errors: true
+
+- name: "Звіт про створення маршрутизаторів"
+  debug:
+    msg: "🖧  Маршрутизатор '{{ item.item.name }}' — {{ 'створено ✅' if item.status in [200,201] else 'помилка ❌: ' + (item.msg | default('unknown')) }}"
+  loop: "{{ created_routers.results }}"
+
+# ── VPCS клієнти ─────────────────────────────────────────────────────────────
+- name: "Створення VPCS клієнта {{ item.name }}"
+  uri:
+    url: "{{ gns3_url }}/projects/{{ gns3_project_id }}/nodes"
+    method: POST
+    body_format: json
+    body:
+      name: "{{ item.name }}"
+      node_type: "vpcs"
+      compute_id: "{{ item.compute_id | default('local') }}"
+      symbol: "{{ item.symbol | default(':/symbols/computer.svg') }}"
+      x: "{{ item.x | default(0) }}"
+      y: "{{ item.y | default(0) }}"
+    return_content: true
+    status_code: [201, 200]
+    headers:
+      Content-Type: "application/json"
+  loop: "{{ gns3_vpcs }}"
+  register: created_vpcs
+  ignore_errors: true
+
+- name: "Зберегти ID VPCS вузлів"
+  set_fact:
+    vpcs_node_ids: "{{ vpcs_node_ids | default({}) | combine({ item.item.name: item.json.node_id }) }}"
+  loop: "{{ created_vpcs.results }}"
+  when: item.status in [200, 201]
+  ignore_errors: true
+
+- name: "Звіт про створення VPCS вузлів"
+  debug:
+    msg: "💻 VPCS '{{ item.item.name }}' — {{ 'створено ✅' if item.status in [200,201] else 'помилка ❌: ' + (item.msg | default('unknown')) }}"
+  loop: "{{ created_vpcs.results }}"
+
+# ── Сервери DMZ ───────────────────────────────────────────────────────────────
+- name: "Створення серверу DMZ {{ item.name }}"
+  uri:
+    url: "{{ gns3_url }}/projects/{{ gns3_project_id }}/nodes"
+    method: POST
+    body_format: json
+    body:
+      name: "{{ item.name }}"
+      node_type: "{{ item.node_type }}"
+      compute_id: "{{ item.compute_id | default('local') }}"
+      symbol: "{{ item.symbol | default(':/symbols/server.svg') }}"
+      x: "{{ item.x | default(0) }}"
+      y: "{{ item.y | default(0) }}"
+      properties: "{{ item.properties | default({}) }}"
+    return_content: true
+    status_code: [201, 200]
+    headers:
+      Content-Type: "application/json"
+  loop: "{{ gns3_servers_list }}"
+  register: created_servers
+  ignore_errors: true
+
+- name: "Зберегти ID серверів DMZ"
+  set_fact:
+    server_node_ids: "{{ server_node_ids | default({}) | combine({ item.item.name: item.json.node_id }) }}"
+  loop: "{{ created_servers.results }}"
+  when: item.status in [200, 201]
+  ignore_errors: true
+
+- name: "Звіт про створення серверів DMZ"
+  debug:
+    msg: "🖥️  Сервер '{{ item.item.name }}' — {{ 'створено ✅' if item.status in [200,201] else 'помилка ❌: ' + (item.msg | default('unknown')) }}"
+  loop: "{{ created_servers.results }}"
+
+# ── Зберегти всі node IDs ────────────────────────────────────────────────────
+- name: "Об'єднати всі node IDs в єдиний словник"
+  set_fact:
+    all_node_ids: "{{ (router_node_ids | default({})) | combine(vpcs_node_ids | default({})) | combine(server_node_ids | default({})) }}"
+    cacheable: true
+
+- name: "Зберегти all_node_ids у файл"
+  copy:
+    content: "{{ all_node_ids | to_json }}"
+    dest: "/tmp/gns3_node_ids.json"
+    mode: "0644"
+
+- name: "✅ Підсумок створення вузлів"
+  debug:
+    msg:
+      - "══════════════════════════════════════════"
+      - "✅ Вузли топології успішно створено"
+      - "   Маршрутизатори: {{ gns3_routers | length }}"
+      - "   VPCS клієнти: {{ gns3_vpcs | length }}"
+      - "   Сервери DMZ: {{ gns3_servers_list | length }}"
+      - "   Всього: {{ (gns3_routers | length) + (gns3_vpcs | length) + (gns3_servers_list | length) }}"
+      - "══════════════════════════════════════════"

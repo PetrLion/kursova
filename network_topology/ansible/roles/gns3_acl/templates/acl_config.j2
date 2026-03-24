@@ -1,0 +1,25 @@
+! ACL конфігурація для маршрутизатора {{ router_name }}
+! Згенеровано Ansible — не редагувати вручну
+!
+{% set seq = namespace(n=10) %}
+{% for rule in router_acl_rules %}
+ip access-list extended {{ rule.name }}
+{% if rule.protocol == 'icmp' %}
+ {{ rule.action }} icmp {{ rule.src }} {{ rule.src_wildcard | default('0.0.0.0') if rule.src != 'any' else '' }} {{ rule.dst }} {{ rule.dst_wildcard | default('0.0.0.0') if rule.dst != 'any' else '' }}
+{% elif rule.dst_port is defined %}
+ {{ rule.action }} {{ rule.protocol }} {{ rule.src }} {{ rule.src_wildcard | default('0.0.0.0') if rule.src != 'any' else '' }} {{ rule.dst }} {{ rule.dst_wildcard | default('0.0.0.0') if rule.dst != 'any' else '' }} eq {{ rule.dst_port }}
+{% else %}
+ {{ rule.action }} {{ rule.protocol }} {{ rule.src }} {{ rule.src_wildcard | default('0.0.0.0') if rule.src != 'any' else '' }} {{ rule.dst }} {{ rule.dst_wildcard | default('0.0.0.0') if rule.dst != 'any' else '' }}
+{% endif %}
+!
+{% endfor %}
+{% for rule in router_acl_rules %}
+{% if rule.direction == 'in' %}
+interface eth0
+ ip access-group {{ rule.name }} in
+{% elif rule.direction == 'out' %}
+interface eth1
+ ip access-group {{ rule.name }} out
+{% endif %}
+{% endfor %}
+!

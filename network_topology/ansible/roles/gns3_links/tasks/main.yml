@@ -1,0 +1,97 @@
+---
+# Role: gns3_links
+# Завдання: створення з'єднань між вузлами GNS3 топології
+
+# Завантаження project_id та node IDs якщо не встановлено
+- name: "Завантажити project_id якщо не встановлено"
+  block:
+    - name: "Читаємо project_id з файлу"
+      slurp:
+        src: "/tmp/gns3_project_id.txt"
+      register: project_id_file_links
+
+    - name: "Встановити gns3_project_id з файлу"
+      set_fact:
+        gns3_project_id: "{{ project_id_file_links.content | b64decode | trim }}"
+  when: gns3_project_id is not defined
+  ignore_errors: true
+
+- name: "Завантажити node IDs якщо не встановлено"
+  block:
+    - name: "Читаємо node IDs з файлу"
+      slurp:
+        src: "/tmp/gns3_node_ids.json"
+      register: node_ids_file
+
+    - name: "Встановити all_node_ids з файлу"
+      set_fact:
+        all_node_ids: "{{ node_ids_file.content | b64decode | from_json }}"
+  when: all_node_ids is not defined or all_node_ids == {}
+  ignore_errors: true
+
+- name: "Отримати поточні вузли з API (щоб мати актуальні node IDs)"
+  uri:
+    url: "{{ gns3_url }}/projects/{{ gns3_project_id }}/nodes"
+    method: GET
+    return_content: true
+    status_code: [200]
+    headers:
+      Content-Type: "application/json"
+  register: current_nodes
+  ignore_errors: true
+
+- name: "Побудувати словник node_name -> node_id з API"
+  set_fact:
+    all_node_ids: "{{ all_node_ids | default({}) | combine({ item.name: item.node_id }) }}"
+  loop: "{{ current_nodes.json }}"
+  when: current_nodes.status == 200
+  ignore_errors: true
+
+# ── Створення з'єднань ───────────────────────────────────────────────────────
+- name: "Перевірити що node IDs доступні для лінку {{ item.description | default(item.node_a + '-' + item.node_b) }}"
+  debug:
+    msg:
+      - "Лінк: {{ item.description | default(item.node_a + ' <-> ' + item.node_b) }}"
+      - "  {{ item.node_a }}: {{ all_node_ids[item.node_a] | default('❌ не знайдено') }}"
+      - "  {{ item.node_b }}: {{ all_node_ids[item.node_b] | default('❌ не знайдено') }}"
+  loop: "{{ gns3_links }}"
+  when: all_node_ids is defined
+
+- name: "Створити з'єднання: {{ item.description | default(item.node_a + ' <-> ' + item.node_b) }}"
+  uri:
+    url: "{{ gns3_url }}/projects/{{ gns3_project_id }}/links"
+    method: POST
+    body_format: json
+    body:
+      nodes:
+        - node_id: "{{ all_node_ids[item.node_a] }}"
+          adapter_number: "{{ item.adapter_a }}"
+          port_number: "{{ item.port_a }}"
+        - node_id: "{{ all_node_ids[item.node_b] }}"
+          adapter_number: "{{ item.adapter_b }}"
+          port_number: "{{ item.port_b }}"
+    return_content: true
+    status_code: [201, 200]
+    headers:
+      Content-Type: "application/json"
+  loop: "{{ gns3_links }}"
+  register: created_links
+  when:
+    - all_node_ids is defined
+    - all_node_ids[item.node_a] is defined
+    - all_node_ids[item.node_b] is defined
+  ignore_errors: true
+
+- name: "Звіт про створення з'єднань"
+  debug:
+    msg: "🔗 {{ item.item.description | default(item.item.node_a + ' <-> ' + item.item.node_b) }} — {{ 'створено ✅' if item.status in [200,201] else 'помилка ❌: ' + (item.msg | default('unknown')) }}"
+  loop: "{{ created_links.results }}"
+  when: created_links is defined
+
+- name: "✅ Підсумок створення з'єднань"
+  debug:
+    msg:
+      - "══════════════════════════════════════════"
+      - "✅ З'єднання між вузлами успішно створено"
+      - "   Всього з'єднань: {{ gns3_links | length }}"
+      - "══════════════════════════════════════════"

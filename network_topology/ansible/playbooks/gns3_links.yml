@@ -1,0 +1,8 @@
+---
+# Playbook: Створення з'єднань між вузлами GNS3
+- name: "GNS3 | Створення links між вузлами"
+  hosts: gns3_servers
+  gather_facts: false
+
+  roles:
+    - role: gns3_links

@@ -1,0 +1,8 @@
+---
+# Playbook: Створення GNS3 проекту
+- name: "GNS3 | Створення проекту"
+  hosts: gns3_servers
+  gather_facts: false
+
+  roles:
+    - role: gns3_project

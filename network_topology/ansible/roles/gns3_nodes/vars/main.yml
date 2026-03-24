@@ -1,0 +1,6 @@
+---
+# Змінні ролі gns3_nodes
+router_node_ids: {}
+vpcs_node_ids: {}
+server_node_ids: {}
+all_node_ids: {}

@@ -1,6 +1,14 @@
 #!/bin/bash
 echo "🚀 Запускаємо все..."
 
+# Прапор --ansible для опціонального запуску Ansible автоматизації
+RUN_ANSIBLE=false
+for arg in "$@"; do
+    if [ "$arg" = "--ansible" ]; then
+        RUN_ANSIBLE=true
+    fi
+done
+
 # 1. GNS3 server
 echo "📡 GNS3 server..."
 gns3server --host 127.0.0.1 --port 3080 &
@@ -41,7 +49,25 @@ echo "✅ Вузли запущені"
 
 sleep 2
 
-# 4. Веб-інтерфейс
+# 4. Ansible автоматизація (опціонально, якщо передано --ansible)
+if [ "$RUN_ANSIBLE" = true ]; then
+    echo ""
+    echo "🤖 Запускаємо Ansible автоматизацію GNS3 топології..."
+    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+    if [ -f "$SCRIPT_DIR/gns3_ansible_manager.py" ]; then
+        python3 "$SCRIPT_DIR/gns3_ansible_manager.py" --playbook all
+        ANSIBLE_RC=$?
+        if [ $ANSIBLE_RC -eq 0 ]; then
+            echo "✅ Ansible автоматизація завершена успішно"
+        else
+            echo "⚠️  Ansible завершився з помилкою (код $ANSIBLE_RC) — продовжуємо"
+        fi
+    else
+        echo "⚠️  gns3_ansible_manager.py не знайдено — пропускаємо Ansible"
+    fi
+fi
+
+# 5. Веб-інтерфейс
 echo "🌐 Запускаємо веб-інтерфейс..."
 sudo fuser -k 5050/tcp 2>/dev/null
 sleep 1
@@ -56,9 +82,13 @@ echo "════════════════════════�
 echo "✅ Все запущено!"
 echo "   GNS3 API:  http://localhost:3080"
 echo "   Web UI:    http://localhost:5050"
+if [ "$RUN_ANSIBLE" = true ]; then
+echo "   Ansible:   завершено (лог: /tmp/ansible_gns3.log)"
+fi
 echo "════════════════════════════════════"
 echo ""
 echo "Натисни Ctrl+C щоб зупинити все"
+echo "Підказка: ./start_all.sh --ansible   щоб запустити з Ansible автоматизацією"
 
 # Чекаємо
 wait $WEB_PID

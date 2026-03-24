@@ -1,0 +1,108 @@
+---
+# Role: gns3_acl
+# Завдання: застосування ACL правил безпеки на маршрутизаторах
+
+- name: "Завантажити project_id якщо не встановлено"
+  block:
+    - name: "Читаємо project_id з файлу"
+      slurp:
+        src: "/tmp/gns3_project_id.txt"
+      register: project_id_file_acl
+
+    - name: "Встановити gns3_project_id з файлу"
+      set_fact:
+        gns3_project_id: "{{ project_id_file_acl.content | b64decode | trim }}"
+  when: gns3_project_id is not defined
+  ignore_errors: true
+
+- name: "Отримати список вузлів для ACL конфігурації"
+  uri:
+    url: "{{ gns3_url }}/projects/{{ gns3_project_id }}/nodes"
+    method: GET
+    return_content: true
+    status_code: [200]
+    headers:
+      Content-Type: "application/json"
+  register: acl_nodes
+  ignore_errors: true
+
+- name: "Зібрати інформацію про вузли (node_id для ACL)"
+  set_fact:
+    acl_node_info: "{{ acl_node_info | default({}) | combine({ item.name: { 'node_id': item.node_id, 'status': item.status } }) }}"
+  loop: "{{ acl_nodes.json }}"
+  when:
+    - acl_nodes.status == 200
+    - item.name in ['R1','R2','R3','R4']
+  ignore_errors: true
+
+# ── Групування ACL правил за маршрутизатором ─────────────────────────────────
+- name: "Згрупувати ACL правила за маршрутизатором"
+  set_fact:
+    acl_by_router: "{{ acl_by_router | default({}) | combine({ item.apply_to: (acl_by_router[item.apply_to] | default([])) + [item] }) }}"
+  loop: "{{ gns3_acl_rules }}"
+
+# ── Генерація ACL конфігурацій ───────────────────────────────────────────────
+- name: "Створити директорію для ACL конфігурацій"
+  file:
+    path: "/tmp/gns3_acl_configs"
+    state: directory
+    mode: "0755"
+
+- name: "Генерувати ACL конфігурацію для маршрутизатора {{ item.key }}"
+  template:
+    src: "acl_config.j2"
+    dest: "/tmp/gns3_acl_configs/{{ item.key }}_acl.conf"
+    mode: "0644"
+  vars:
+    router_name: "{{ item.key }}"
+    router_acl_rules: "{{ item.value }}"
+  loop: "{{ acl_by_router | dict2items }}"
+  when: acl_by_router is defined
+  register: acl_configs_generated
+
+- name: "Показати згенеровані ACL конфігурації"
+  debug:
+    msg: "📄 ACL конфіг для {{ item.item.key }}: /tmp/gns3_acl_configs/{{ item.item.key }}_acl.conf"
+  loop: "{{ acl_configs_generated.results }}"
+  when: acl_configs_generated is defined
+
+# ── Завантаження ACL конфігурацій через GNS3 API ─────────────────────────────
+- name: "Завантажити ACL конфігурацію для {{ item.key }} в GNS3"
+  block:
+    - name: "Читаємо ACL конфіг файл для {{ item.key }}"
+      slurp:
+        src: "/tmp/gns3_acl_configs/{{ item.key }}_acl.conf"
+      register: acl_conf_content
+
+    - name: "Завантажити ACL конфіг для {{ item.key }} через GNS3 API"
+      uri:
+        url: "{{ gns3_url }}/projects/{{ gns3_project_id }}/nodes/{{ acl_node_info[item.key].node_id }}/files/etc/frr/acl.conf"
+        method: POST
+        body: "{{ acl_conf_content.content | b64decode }}"
+        return_content: true
+        status_code: [200, 201, 204]
+        headers:
+          Content-Type: "application/octet-stream"
+      register: acl_upload_result
+      ignore_errors: true
+
+    - name: "Звіт про завантаження ACL конфігу для {{ item.key }}"
+      debug:
+        msg: "🛡️  ACL конфіг для {{ item.key }}: {{ '✅ завантажено' if acl_upload_result.status in [200,201,204] else '⚠️ помилка: ' + (acl_upload_result.msg | default('unknown')) }}"
+  loop: "{{ acl_by_router | dict2items }}"
+  when:
+    - acl_by_router is defined
+    - acl_node_info is defined
+    - item.key in acl_node_info
+    - acl_node_info[item.key].status == 'started'
+  ignore_errors: true
+
+- name: "✅ Підсумок застосування ACL правил"
+  debug:
+    msg:
+      - "══════════════════════════════════════════"
+      - "🛡️  ACL правила безпеки застосовано"
+      - "   Всього правил: {{ gns3_acl_rules | length }}"
+      - "   Маршрутизатори: {{ acl_by_router | default({}) | length }}"
+      - "   Конфіги збережено: /tmp/gns3_acl_configs/"
+      - "══════════════════════════════════════════"

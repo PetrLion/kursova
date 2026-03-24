@@ -1,0 +1,8 @@
+---
+# Playbook: Запуск всіх вузлів GNS3 проекту
+- name: "GNS3 | Запуск всіх вузлів"
+  hosts: gns3_servers
+  gather_facts: false
+
+  roles:
+    - role: gns3_start_nodes

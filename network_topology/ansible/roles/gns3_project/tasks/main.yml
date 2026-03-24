@@ -1,0 +1,92 @@
+---
+# Role: gns3_project
+# Завдання: перевірка, видалення (якщо існує) та створення GNS3 проекту
+
+- name: "Отримати список існуючих проектів GNS3"
+  uri:
+    url: "{{ gns3_url }}/projects"
+    method: GET
+    return_content: true
+    status_code: [200, 401]
+    headers:
+      Content-Type: "application/json"
+  register: existing_projects
+  ignore_errors: true
+
+- name: "Перевірити відповідь GNS3 сервера"
+  fail:
+    msg: "❌ Не вдалось підключитись до GNS3 сервера за адресою {{ gns3_url }}. Переконайтесь що сервер запущено."
+  when: existing_projects is failed
+
+- name: "Знайти проект з такою ж назвою (якщо існує)"
+  set_fact:
+    existing_project: "{{ existing_projects.json | selectattr('name','equalto', gns3_project_name) | list | first | default(None) }}"
+  when: existing_projects.status == 200
+
+- name: "Видалити існуючий проект '{{ gns3_project_name }}' (якщо він є)"
+  uri:
+    url: "{{ gns3_url }}/projects/{{ existing_project.project_id }}"
+    method: DELETE
+    status_code: [204, 404]
+    headers:
+      Content-Type: "application/json"
+  when:
+    - existing_project is defined
+    - existing_project is not none
+    - existing_project | length > 0
+  register: delete_result
+
+- name: "Повідомлення про видалення старого проекту"
+  debug:
+    msg: "🗑️  Видалено існуючий проект '{{ gns3_project_name }}' (id: {{ existing_project.project_id }})"
+  when:
+    - existing_project is defined
+    - existing_project is not none
+    - existing_project | length > 0
+
+- name: "Створити новий GNS3 проект '{{ gns3_project_name }}'"
+  uri:
+    url: "{{ gns3_url }}/projects"
+    method: POST
+    body_format: json
+    body:
+      name: "{{ gns3_project_name }}"
+      auto_close: false
+      auto_open: true
+      auto_start: false
+    return_content: true
+    status_code: [201, 200]
+    headers:
+      Content-Type: "application/json"
+  register: created_project
+
+- name: "Зберегти project_id як глобальний факт"
+  set_fact:
+    gns3_project_id: "{{ created_project.json.project_id }}"
+    cacheable: true
+
+- name: "Зберегти project_id у файл для подальшого використання"
+  copy:
+    content: "{{ created_project.json.project_id }}"
+    dest: "/tmp/gns3_project_id.txt"
+    mode: "0644"
+
+- name: "Відкрити щойно створений проект"
+  uri:
+    url: "{{ gns3_url }}/projects/{{ gns3_project_id }}/open"
+    method: POST
+    body_format: json
+    body: {}
+    return_content: true
+    status_code: [201, 200]
+    headers:
+      Content-Type: "application/json"
+  register: open_result
+  ignore_errors: true
+
+- name: "✅ Проект успішно створено"
+  debug:
+    msg:
+      - "✅ GNS3 проект '{{ gns3_project_name }}' успішно створено"
+      - "   Project ID: {{ gns3_project_id }}"
+      - "   Статус: {{ created_project.json.status | default('unknown') }}"
