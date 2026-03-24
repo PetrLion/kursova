@@ -1,0 +1,3 @@
+---
+# Змінні ролі gns3_project (перевизначаються group_vars/gns3_servers.yml)
+gns3_project_name: "network-security-topology"

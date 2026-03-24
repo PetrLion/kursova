@@ -1,0 +1,478 @@
+---
+# ──────────────────────────────────────────────────────────────────────────────
+# GNS3 Server Configuration
+# ──────────────────────────────────────────────────────────────────────────────
+gns3_url: "http://{{ gns3_host }}:{{ gns3_port }}/{{ gns3_api_version }}"
+gns3_project_name: "network-security-topology"
+gns3_auth_enabled: false
+gns3_username: ""
+gns3_password: ""
+
+flask_url: "http://localhost:5050"
+log_file: "/tmp/ansible_gns3.log"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Вузли топології — Маршрутизатори (FRR/Quagga)
+# ──────────────────────────────────────────────────────────────────────────────
+gns3_routers:
+  - name: "R1"
+    node_type: "docker"
+    compute_id: "local"
+    image: "frrouting/frr:latest"
+    symbol: ":/symbols/router.svg"
+    x: 0
+    y: 0
+    properties:
+      adapters: 4
+    router_id: "1.1.1.1"
+    role: "Core"
+    interfaces:
+      - name: "eth0"
+        ip: "10.0.10.1"
+        prefix: 30
+        peer: "R2"
+      - name: "eth1"
+        ip: "10.0.11.1"
+        prefix: 30
+        peer: "R3"
+      - name: "eth2"
+        ip: "10.0.12.1"
+        prefix: 30
+        peer: "R4"
+      - name: "lo"
+        ip: "1.1.1.1"
+        prefix: 32
+
+  - name: "R2"
+    node_type: "docker"
+    compute_id: "local"
+    image: "frrouting/frr:latest"
+    symbol: ":/symbols/router.svg"
+    x: -200
+    y: 150
+    properties:
+      adapters: 3
+    router_id: "2.2.2.2"
+    role: "Office"
+    interfaces:
+      - name: "eth0"
+        ip: "10.0.10.2"
+        prefix: 30
+        peer: "R1"
+      - name: "eth1"
+        ip: "10.0.20.1"
+        prefix: 24
+        peer: "LAN_Office"
+      - name: "lo"
+        ip: "2.2.2.2"
+        prefix: 32
+
+  - name: "R3"
+    node_type: "docker"
+    compute_id: "local"
+    image: "frrouting/frr:latest"
+    symbol: ":/symbols/router.svg"
+    x: 0
+    y: 200
+    properties:
+      adapters: 3
+    router_id: "3.3.3.3"
+    role: "Restricted"
+    interfaces:
+      - name: "eth0"
+        ip: "10.0.11.2"
+        prefix: 30
+        peer: "R1"
+      - name: "eth1"
+        ip: "10.0.30.1"
+        prefix: 24
+        peer: "LAN_Restricted"
+      - name: "lo"
+        ip: "3.3.3.3"
+        prefix: 32
+
+  - name: "R4"
+    node_type: "docker"
+    compute_id: "local"
+    image: "frrouting/frr:latest"
+    symbol: ":/symbols/router.svg"
+    x: 200
+    y: 150
+    properties:
+      adapters: 3
+    router_id: "4.4.4.4"
+    role: "DMZ"
+    interfaces:
+      - name: "eth0"
+        ip: "10.0.12.2"
+        prefix: 30
+        peer: "R1"
+      - name: "eth1"
+        ip: "10.0.40.1"
+        prefix: 24
+        peer: "LAN_DMZ"
+      - name: "lo"
+        ip: "4.4.4.4"
+        prefix: 32
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Вузли топології — VPCS клієнти
+# ──────────────────────────────────────────────────────────────────────────────
+gns3_vpcs:
+  - name: "PC1"
+    node_type: "vpcs"
+    compute_id: "local"
+    symbol: ":/symbols/computer.svg"
+    x: -350
+    y: 300
+    zone: "office"
+    ip: "10.0.20.10"
+    prefix: 24
+    gateway: "10.0.20.1"
+    connected_to: "R2"
+
+  - name: "PC2"
+    node_type: "vpcs"
+    compute_id: "local"
+    symbol: ":/symbols/computer.svg"
+    x: -250
+    y: 350
+    zone: "office"
+    ip: "10.0.20.11"
+    prefix: 24
+    gateway: "10.0.20.1"
+    connected_to: "R2"
+
+  - name: "PC3"
+    node_type: "vpcs"
+    compute_id: "local"
+    symbol: ":/symbols/computer.svg"
+    x: -150
+    y: 350
+    zone: "office"
+    ip: "10.0.20.12"
+    prefix: 24
+    gateway: "10.0.20.1"
+    connected_to: "R2"
+
+  - name: "PC4"
+    node_type: "vpcs"
+    compute_id: "local"
+    symbol: ":/symbols/computer.svg"
+    x: -100
+    y: 350
+    zone: "restricted"
+    ip: "10.0.30.10"
+    prefix: 24
+    gateway: "10.0.30.1"
+    connected_to: "R3"
+
+  - name: "PC5"
+    node_type: "vpcs"
+    compute_id: "local"
+    symbol: ":/symbols/computer.svg"
+    x: 0
+    y: 400
+    zone: "restricted"
+    ip: "10.0.30.11"
+    prefix: 24
+    gateway: "10.0.30.1"
+    connected_to: "R3"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Вузли топології — Сервери DMZ
+# ──────────────────────────────────────────────────────────────────────────────
+gns3_servers_list:
+  - name: "SRV-WEB"
+    node_type: "docker"
+    compute_id: "local"
+    image: "nginx:alpine"
+    symbol: ":/symbols/server.svg"
+    x: 300
+    y: 300
+    zone: "dmz"
+    ip: "10.0.40.10"
+    prefix: 24
+    gateway: "10.0.40.1"
+    connected_to: "R4"
+    properties:
+      adapters: 1
+
+  - name: "SRV-REDIS"
+    node_type: "docker"
+    compute_id: "local"
+    image: "redis:alpine"
+    symbol: ":/symbols/server.svg"
+    x: 400
+    y: 300
+    zone: "dmz"
+    ip: "10.0.40.11"
+    prefix: 24
+    gateway: "10.0.40.1"
+    connected_to: "R4"
+    properties:
+      adapters: 1
+
+  - name: "SRV-DB"
+    node_type: "docker"
+    compute_id: "local"
+    image: "postgres:alpine"
+    symbol: ":/symbols/server.svg"
+    x: 500
+    y: 300
+    zone: "dmz"
+    ip: "10.0.40.12"
+    prefix: 24
+    gateway: "10.0.40.1"
+    connected_to: "R4"
+    properties:
+      adapters: 1
+
+# ──────────────────────────────────────────────────────────────────────────────
+# З'єднання між вузлами (links)
+# Формат: node_a/adapter_a/port_a <-> node_b/adapter_b/port_b
+# ──────────────────────────────────────────────────────────────────────────────
+gns3_links:
+  # Міжмаршрутизаторні канали
+  - node_a: "R1"
+    adapter_a: 0
+    port_a: 0
+    node_b: "R2"
+    adapter_b: 0
+    port_b: 0
+    description: "R1-R2 core link 10.0.10.0/30"
+
+  - node_a: "R1"
+    adapter_a: 1
+    port_a: 0
+    node_b: "R3"
+    adapter_b: 0
+    port_b: 0
+    description: "R1-R3 core link 10.0.11.0/30"
+
+  - node_a: "R1"
+    adapter_a: 2
+    port_a: 0
+    node_b: "R4"
+    adapter_b: 0
+    port_b: 0
+    description: "R1-R4 core link 10.0.12.0/30"
+
+  # R2 LAN — Office zone (кожен PC на окремому порту)
+  - node_a: "R2"
+    adapter_a: 1
+    port_a: 0
+    node_b: "PC1"
+    adapter_b: 0
+    port_b: 0
+    description: "R2-PC1 office LAN"
+
+  - node_a: "R2"
+    adapter_a: 1
+    port_a: 1
+    node_b: "PC2"
+    adapter_b: 0
+    port_b: 0
+    description: "R2-PC2 office LAN"
+
+  - node_a: "R2"
+    adapter_a: 1
+    port_a: 2
+    node_b: "PC3"
+    adapter_b: 0
+    port_b: 0
+    description: "R2-PC3 office LAN"
+
+  # R3 LAN — Restricted zone (кожен PC на окремому порту)
+  - node_a: "R3"
+    adapter_a: 1
+    port_a: 0
+    node_b: "PC4"
+    adapter_b: 0
+    port_b: 0
+    description: "R3-PC4 restricted LAN"
+
+  - node_a: "R3"
+    adapter_a: 1
+    port_a: 1
+    node_b: "PC5"
+    adapter_b: 0
+    port_b: 0
+    description: "R3-PC5 restricted LAN"
+
+  # R4 LAN — DMZ zone (кожен сервер на окремому порту)
+  - node_a: "R4"
+    adapter_a: 1
+    port_a: 0
+    node_b: "SRV-WEB"
+    adapter_b: 0
+    port_b: 0
+    description: "R4-SRV-WEB DMZ"
+
+  - node_a: "R4"
+    adapter_a: 1
+    port_a: 1
+    node_b: "SRV-REDIS"
+    adapter_b: 0
+    port_b: 0
+    description: "R4-SRV-REDIS DMZ"
+
+  - node_a: "R4"
+    adapter_a: 1
+    port_a: 2
+    node_b: "SRV-DB"
+    adapter_b: 0
+    port_b: 0
+    description: "R4-SRV-DB DMZ"
+
+# ──────────────────────────────────────────────────────────────────────────────
+# OSPF конфігурація на маршрутизаторах
+# ──────────────────────────────────────────────────────────────────────────────
+gns3_ospf_config:
+  area: 0
+  process_id: 1
+  routers:
+    R1:
+      router_id: "1.1.1.1"
+      networks:
+        - prefix: "10.0.10.0"
+          prefix_len: 30
+          wildcard: "0.0.0.3"
+          area: 0
+        - prefix: "10.0.11.0"
+          prefix_len: 30
+          wildcard: "0.0.0.3"
+          area: 0
+        - prefix: "10.0.12.0"
+          prefix_len: 30
+          wildcard: "0.0.0.3"
+          area: 0
+        - prefix: "1.1.1.1"
+          prefix_len: 32
+          wildcard: "0.0.0.0"
+          area: 0
+      redistribute_connected: true
+    R2:
+      router_id: "2.2.2.2"
+      networks:
+        - prefix: "10.0.10.0"
+          prefix_len: 30
+          wildcard: "0.0.0.3"
+          area: 0
+        - prefix: "10.0.20.0"
+          prefix_len: 24
+          wildcard: "0.0.0.255"
+          area: 0
+        - prefix: "2.2.2.2"
+          prefix_len: 32
+          wildcard: "0.0.0.0"
+          area: 0
+      redistribute_connected: true
+    R3:
+      router_id: "3.3.3.3"
+      networks:
+        - prefix: "10.0.11.0"
+          prefix_len: 30
+          wildcard: "0.0.0.3"
+          area: 0
+        - prefix: "10.0.30.0"
+          prefix_len: 24
+          wildcard: "0.0.0.255"
+          area: 0
+        - prefix: "3.3.3.3"
+          prefix_len: 32
+          wildcard: "0.0.0.0"
+          area: 0
+      redistribute_connected: true
+    R4:
+      router_id: "4.4.4.4"
+      networks:
+        - prefix: "10.0.12.0"
+          prefix_len: 30
+          wildcard: "0.0.0.3"
+          area: 0
+        - prefix: "10.0.40.0"
+          prefix_len: 24
+          wildcard: "0.0.0.255"
+          area: 0
+        - prefix: "4.4.4.4"
+          prefix_len: 32
+          wildcard: "0.0.0.0"
+          area: 0
+      redistribute_connected: true
+
+# ──────────────────────────────────────────────────────────────────────────────
+# ACL правила безпеки
+# ──────────────────────────────────────────────────────────────────────────────
+gns3_acl_rules:
+  # Дозволити HTTP/HTTPS з офісу до DMZ
+  - name: "ALLOW_OFFICE_TO_DMZ_HTTP"
+    action: "permit"
+    protocol: "tcp"
+    src: "10.0.20.0"
+    src_wildcard: "0.0.0.255"
+    dst: "10.0.40.0"
+    dst_wildcard: "0.0.0.255"
+    dst_port: "80"
+    apply_to: "R2"
+    direction: "out"
+    interface: "eth1"
+
+  - name: "ALLOW_OFFICE_TO_DMZ_HTTPS"
+    action: "permit"
+    protocol: "tcp"
+    src: "10.0.20.0"
+    src_wildcard: "0.0.0.255"
+    dst: "10.0.40.0"
+    dst_wildcard: "0.0.0.255"
+    dst_port: "443"
+    apply_to: "R2"
+    direction: "out"
+    interface: "eth1"
+
+  # Заблокувати прямий доступ з restricted до DMZ
+  - name: "DENY_RESTRICTED_TO_DMZ"
+    action: "deny"
+    protocol: "ip"
+    src: "10.0.30.0"
+    src_wildcard: "0.0.0.255"
+    dst: "10.0.40.0"
+    dst_wildcard: "0.0.0.255"
+    apply_to: "R3"
+    direction: "out"
+    interface: "eth1"
+
+  # Дозволити ICMP між усіма зонами
+  - name: "ALLOW_ICMP_ALL"
+    action: "permit"
+    protocol: "icmp"
+    src: "any"
+    dst: "any"
+    apply_to: "R1"
+    direction: "in"
+    interface: "eth0"
+
+  # Заблокувати Telnet/SSH з DMZ у внутрішні мережі
+  - name: "DENY_DMZ_TELNET_INTERNAL"
+    action: "deny"
+    protocol: "tcp"
+    src: "10.0.40.0"
+    src_wildcard: "0.0.0.255"
+    dst: "10.0.0.0"
+    dst_wildcard: "0.0.255.255"
+    dst_port: "23"
+    apply_to: "R4"
+    direction: "out"
+    interface: "eth0"
+
+  - name: "DENY_DMZ_SSH_INTERNAL"
+    action: "deny"
+    protocol: "tcp"
+    src: "10.0.40.0"
+    src_wildcard: "0.0.0.255"
+    dst: "10.0.0.0"
+    dst_wildcard: "0.0.255.255"
+    dst_port: "22"
+    apply_to: "R4"
+    direction: "out"
+    interface: "eth0"

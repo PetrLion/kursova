@@ -1,0 +1,70 @@
+---
+# Role: gns3_start_nodes
+# Завдання: запуск всіх вузлів GNS3 проекту
+
+- name: "Завантажити project_id якщо не встановлено"
+  block:
+    - name: "Читаємо project_id з файлу"
+      slurp:
+        src: "/tmp/gns3_project_id.txt"
+      register: project_id_file_start
+
+    - name: "Встановити gns3_project_id з файлу"
+      set_fact:
+        gns3_project_id: "{{ project_id_file_start.content | b64decode | trim }}"
+  when: gns3_project_id is not defined
+  ignore_errors: true
+
+- name: "Перевірити що project_id встановлено"
+  fail:
+    msg: "❌ gns3_project_id не встановлено. Спочатку запустіть роль gns3_project!"
+  when: gns3_project_id is not defined or gns3_project_id == ""
+
+- name: "Запустити всі вузли проекту (bulk start)"
+  uri:
+    url: "{{ gns3_url }}/projects/{{ gns3_project_id }}/nodes/start"
+    method: POST
+    body_format: json
+    body: {}
+    return_content: true
+    status_code: [204, 200, 201]
+    headers:
+      Content-Type: "application/json"
+  register: start_result
+  ignore_errors: true
+
+- name: "Перевірити результат запуску"
+  debug:
+    msg: "{{ '▶️  Всі вузли запущено ✅' if start_result.status in [200,201,204] else '⚠️  Запуск вузлів: ' + (start_result.msg | default('невідома помилка')) }}"
+
+- name: "Зачекати 5 секунд поки вузли ініціалізуються"
+  pause:
+    seconds: 5
+
+- name: "Отримати поточний стан вузлів"
+  uri:
+    url: "{{ gns3_url }}/projects/{{ gns3_project_id }}/nodes"
+    method: GET
+    return_content: true
+    status_code: [200]
+    headers:
+      Content-Type: "application/json"
+  register: nodes_status
+  ignore_errors: true
+
+- name: "Показати статус кожного вузла"
+  debug:
+    msg: "{{ item.name }}: {{ item.status | upper }}"
+  loop: "{{ nodes_status.json }}"
+  when: nodes_status.status == 200
+
+- name: "✅ Підсумок запуску вузлів"
+  debug:
+    msg:
+      - "══════════════════════════════════════════"
+      - "▶️  Вузли GNS3 топології запущено"
+      - "   Проект: {{ gns3_project_id }}"
+      - "   Запущено: {{ nodes_status.json | selectattr('status','equalto','started') | list | length | default(0) }}"
+      - "   Всього вузлів: {{ nodes_status.json | length | default(0) }}"
+      - "══════════════════════════════════════════"
+  when: nodes_status.status == 200

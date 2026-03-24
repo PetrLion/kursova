@@ -1,0 +1,21 @@
+---
+# Головний playbook: оркестрація всього процесу налаштування GNS3
+# Запускає всі кроки послідовно
+
+- name: "🔧 GNS3 | Створення та налаштування проекту"
+  import_playbook: "gns3_project.yml"
+
+- name: "🖧  GNS3 | Розгортання вузлів топології"
+  import_playbook: "gns3_nodes.yml"
+
+- name: "🔗 GNS3 | Створення з'єднань між вузлами"
+  import_playbook: "gns3_links.yml"
+
+- name: "▶️  GNS3 | Запуск всіх вузлів"
+  import_playbook: "gns3_start.yml"
+
+- name: "🛡️  GNS3 | Налаштування OSPF та ACL"
+  import_playbook: "gns3_configure.yml"
+
+- name: "✅ GNS3 | Валідація топології"
+  import_playbook: "gns3_validate.yml"

@@ -1,0 +1,108 @@
+---
+# Playbook: Валідація GNS3 топології
+- name: "GNS3 | Валідація топології"
+  hosts: gns3_servers
+  gather_facts: false
+
+  vars:
+    validation_results: []
+
+  tasks:
+    - name: "Отримати інформацію про проект"
+      uri:
+        url: "{{ gns3_url }}/projects"
+        method: GET
+        return_content: true
+        status_code: [200]
+        headers:
+          Content-Type: "application/json"
+      register: projects_response
+      ignore_errors: true
+
+    - name: "Перевірити що проект існує"
+      assert:
+        that:
+          - projects_response.status == 200
+          - projects_response.json | selectattr('name','equalto', gns3_project_name) | list | length > 0
+        fail_msg: "❌ Проект '{{ gns3_project_name }}' не знайдено в GNS3!"
+        success_msg: "✅ Проект '{{ gns3_project_name }}' існує"
+      ignore_errors: true
+
+    - name: "Знайти ID проекту для валідації"
+      set_fact:
+        validate_project_id: "{{ (projects_response.json | selectattr('name','equalto', gns3_project_name) | list | first).project_id }}"
+      when:
+        - projects_response.status == 200
+        - (projects_response.json | selectattr('name','equalto', gns3_project_name) | list | length) > 0
+
+    - name: "Отримати список вузлів проекту"
+      uri:
+        url: "{{ gns3_url }}/projects/{{ validate_project_id }}/nodes"
+        method: GET
+        return_content: true
+        status_code: [200]
+        headers:
+          Content-Type: "application/json"
+      register: nodes_response
+      when: validate_project_id is defined
+      ignore_errors: true
+
+    - name: "Перевірити кількість вузлів"
+      assert:
+        that:
+          - nodes_response.json | length >= 12
+        fail_msg: "❌ Знайдено лише {{ nodes_response.json | length }} вузлів. Очікується мінімум 12!"
+        success_msg: "✅ Знайдено {{ nodes_response.json | length }} вузлів у топології"
+      when:
+        - nodes_response is defined
+        - nodes_response.status == 200
+      ignore_errors: true
+
+    - name: "Перевірити що маршрутизатори запущені"
+      assert:
+        that:
+          - nodes_response.json | selectattr('name','equalto', item) | selectattr('status','equalto','started') | list | length > 0
+        fail_msg: "❌ Маршрутизатор {{ item }} не запущено!"
+        success_msg: "✅ Маршрутизатор {{ item }} запущено"
+      loop:
+        - "R1"
+        - "R2"
+        - "R3"
+        - "R4"
+      when:
+        - nodes_response is defined
+        - nodes_response.status == 200
+      ignore_errors: true
+
+    - name: "Отримати список з'єднань проекту"
+      uri:
+        url: "{{ gns3_url }}/projects/{{ validate_project_id }}/links"
+        method: GET
+        return_content: true
+        status_code: [200]
+        headers:
+          Content-Type: "application/json"
+      register: links_response
+      when: validate_project_id is defined
+      ignore_errors: true
+
+    - name: "Перевірити кількість з'єднань"
+      assert:
+        that:
+          - links_response.json | length >= 11
+        fail_msg: "❌ Знайдено лише {{ links_response.json | length }} з'єднань. Очікується мінімум 11!"
+        success_msg: "✅ Знайдено {{ links_response.json | length }} з'єднань у топології"
+      when:
+        - links_response is defined
+        - links_response.status == 200
+      ignore_errors: true
+
+    - name: "Вивести підсумок валідації"
+      debug:
+        msg:
+          - "══════════════════════════════════════════"
+          - "✅ Валідація GNS3 топології завершена"
+          - "   Проект: {{ gns3_project_name }}"
+          - "   Вузлів: {{ nodes_response.json | length | default('N/A') }}"
+          - "   З'єднань: {{ links_response.json | length | default('N/A') }}"
+          - "══════════════════════════════════════════"

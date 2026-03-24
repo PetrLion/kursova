@@ -1,0 +1,9 @@
+---
+# Playbook: Налаштування OSPF та ACL на маршрутизаторах
+- name: "GNS3 | Налаштування OSPF та ACL"
+  hosts: gns3_servers
+  gather_facts: false
+
+  roles:
+    - role: gns3_ospf
+    - role: gns3_acl

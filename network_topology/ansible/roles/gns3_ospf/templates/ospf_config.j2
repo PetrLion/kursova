@@ -1,0 +1,34 @@
+! FRR/Quagga OSPF конфігурація для {{ router_name }}
+! Згенеровано Ansible — не редагувати вручну
+!
+frr version 8.5
+frr defaults traditional
+hostname {{ router_name }}
+log syslog informational
+!
+interface lo
+ ip address {{ router_ospf.router_id }}/32
+!
+{% for iface in (gns3_routers | selectattr('name','equalto', router_name) | list | first).interfaces | default([]) %}
+{% if iface.name != 'lo' %}
+interface {{ iface.name }}
+ ip address {{ iface.ip }}/{{ iface.prefix }}
+ ip ospf area {{ gns3_ospf_config.area }}
+ ip ospf hello-interval 10
+ ip ospf dead-interval 40
+!
+{% endif %}
+{% endfor %}
+!
+router ospf
+ ospf router-id {{ router_ospf.router_id }}
+ log-adjacency-changes detail
+{% for net in router_ospf.networks %}
+ network {{ net.prefix }}/{{ net.prefix_len }} area {{ net.area }}
+{% endfor %}
+{% if router_ospf.redistribute_connected %}
+ redistribute connected
+{% endif %}
+!
+line vty
+!

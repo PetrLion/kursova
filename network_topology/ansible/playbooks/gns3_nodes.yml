@@ -1,0 +1,8 @@
+---
+# Playbook: Створення вузлів GNS3 топології
+- name: "GNS3 | Розгортання вузлів"
+  hosts: gns3_servers
+  gather_facts: false
+
+  roles:
+    - role: gns3_nodes

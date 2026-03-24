@@ -868,6 +868,60 @@ def api_reports():
         except: pass
     return jsonify(reports)
 
+@app.route("/api/ansible_update", methods=["POST"])
+def api_ansible_update():
+    """Приймає оновлення від gns3_ansible_manager.py та сповіщає клієнтів."""
+    from flask import request as req
+    data = req.get_json(silent=True) or {}
+
+    # Оновити стан топології якщо є дані
+    deployment = data.get("deployment", {})
+    if deployment.get("nodes"):
+        topo_nodes = [
+            {
+                "id":    n.get("id", n.get("name", "")),
+                "label": n.get("name", ""),
+                "title": f"{n.get('type','?')} | {n.get('status','?')}",
+                "group": n.get("type", "unknown"),
+            }
+            for n in deployment["nodes"]
+        ]
+        topo_edges = []
+        for lnk in deployment.get("links", []):
+            endpoints = lnk.get("nodes", [])
+            if len(endpoints) == 2:
+                topo_edges.append({
+                    "from": endpoints[0].get("node_id"),
+                    "to":   endpoints[1].get("node_id"),
+                })
+        state["topology"] = {"nodes": topo_nodes, "edges": topo_edges}
+
+    # Сповістити підключених клієнтів через SocketIO
+    socket.emit("ansible_update", {
+        "timestamp":      data.get("timestamp"),
+        "overall_status": data.get("overall_status", "unknown"),
+        "gns3_online":    data.get("gns3_online", False),
+        "gns3_version":   data.get("gns3_version"),
+        "playbooks_run":  data.get("playbooks_run", []),
+        "topology":       state["topology"],
+        "project_id":     deployment.get("project_id"),
+        "project_name":   deployment.get("project_name"),
+        "nodes_count":    len(deployment.get("nodes", [])),
+        "links_count":    len(deployment.get("links", [])),
+    })
+
+    socket.emit("log", {
+        "msg":   f"🤖 Ansible оновлення: {data.get('overall_status','?')} | вузлів: {len(deployment.get('nodes',[]))} | з'єднань: {len(deployment.get('links',[]))}",
+        "color": "#3fb950" if data.get("overall_status") == "success" else "#f85149",
+    })
+
+    return jsonify({
+        "status":  "ok",
+        "message": "Ansible дані отримано та надіслано клієнтам",
+        "nodes":   len(deployment.get("nodes", [])),
+        "links":   len(deployment.get("links", [])),
+    })
+
 if __name__ == "__main__":
     print("\n🛡️  Network Security Validator UI")
     print("   http://localhost:5050\n")
