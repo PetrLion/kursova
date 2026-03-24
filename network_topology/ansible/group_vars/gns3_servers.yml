@@ -258,7 +258,7 @@ gns3_links:
     port_b: 0
     description: "R1-R4 core link 10.0.12.0/30"
 
-  # R2 LAN — Office zone
+  # R2 LAN — Office zone (кожен PC на окремому порту)
   - node_a: "R2"
     adapter_a: 1
     port_a: 0
@@ -269,7 +269,7 @@ gns3_links:
 
   - node_a: "R2"
     adapter_a: 1
-    port_a: 0
+    port_a: 1
     node_b: "PC2"
     adapter_b: 0
     port_b: 0
@@ -277,13 +277,13 @@ gns3_links:
 
   - node_a: "R2"
     adapter_a: 1
-    port_a: 0
+    port_a: 2
     node_b: "PC3"
     adapter_b: 0
     port_b: 0
     description: "R2-PC3 office LAN"
 
-  # R3 LAN — Restricted zone
+  # R3 LAN — Restricted zone (кожен PC на окремому порту)
   - node_a: "R3"
     adapter_a: 1
     port_a: 0
@@ -294,13 +294,13 @@ gns3_links:
 
   - node_a: "R3"
     adapter_a: 1
-    port_a: 0
+    port_a: 1
     node_b: "PC5"
     adapter_b: 0
     port_b: 0
     description: "R3-PC5 restricted LAN"
 
-  # R4 LAN — DMZ zone
+  # R4 LAN — DMZ zone (кожен сервер на окремому порту)
   - node_a: "R4"
     adapter_a: 1
     port_a: 0
@@ -311,7 +311,7 @@ gns3_links:
 
   - node_a: "R4"
     adapter_a: 1
-    port_a: 0
+    port_a: 1
     node_b: "SRV-REDIS"
     adapter_b: 0
     port_b: 0
@@ -319,7 +319,7 @@ gns3_links:
 
   - node_a: "R4"
     adapter_a: 1
-    port_a: 0
+    port_a: 2
     node_b: "SRV-DB"
     adapter_b: 0
     port_b: 0

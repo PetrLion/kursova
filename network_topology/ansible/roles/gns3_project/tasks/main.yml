@@ -7,7 +7,7 @@
     url: "{{ gns3_url }}/projects"
     method: GET
     return_content: true
-    status_code: [200, 401]
+    status_code: [200]
     headers:
       Content-Type: "application/json"
   register: existing_projects
@@ -15,7 +15,7 @@
 
 - name: "Перевірити відповідь GNS3 сервера"
   fail:
-    msg: "❌ Не вдалось підключитись до GNS3 сервера за адресою {{ gns3_url }}. Переконайтесь що сервер запущено."
+    msg: "❌ Не вдалось підключитись до GNS3 сервера за адресою {{ gns3_url }}. Переконайтесь що сервер запущено та автентифікація налаштована правильно (HTTP {{ existing_projects.status | default('N/A') }})."
   when: existing_projects is failed
 
 - name: "Знайти проект з такою ж назвою (якщо існує)"

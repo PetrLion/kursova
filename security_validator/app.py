@@ -887,7 +887,6 @@ def api_ansible_update():
             for n in deployment["nodes"]
         ]
         topo_edges = []
-        node_id_map = {n.get("id"): n.get("name","") for n in deployment["nodes"]}
         for lnk in deployment.get("links", []):
             endpoints = lnk.get("nodes", [])
             if len(endpoints) == 2:

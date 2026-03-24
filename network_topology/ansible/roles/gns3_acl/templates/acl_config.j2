@@ -1,16 +1,19 @@
 ! ACL конфігурація для маршрутизатора {{ router_name }}
 ! Згенеровано Ansible — не редагувати вручну
 !
+{% macro addr_wildcard(addr, wildcard) -%}
+{{ addr }}{% if addr != 'any' %} {{ wildcard | default('0.0.0.0') }}{% endif %}
+{%- endmacro %}
 {% for rule in router_acl_rules %}
 ip access-list extended {{ rule.name }}
 {% if rule.protocol == 'icmp' %}
- {{ rule.action }} icmp {{ rule.src }}{% if rule.src != 'any' %} {{ rule.src_wildcard | default('0.0.0.0') }}{% endif %} {{ rule.dst }}{% if rule.dst != 'any' %} {{ rule.dst_wildcard | default('0.0.0.0') }}{% endif %}
+ {{ rule.action }} icmp {{ addr_wildcard(rule.src, rule.src_wildcard | default('0.0.0.0')) }} {{ addr_wildcard(rule.dst, rule.dst_wildcard | default('0.0.0.0')) }}
 
 {% elif rule.dst_port is defined %}
- {{ rule.action }} {{ rule.protocol }} {{ rule.src }}{% if rule.src != 'any' %} {{ rule.src_wildcard | default('0.0.0.0') }}{% endif %} {{ rule.dst }}{% if rule.dst != 'any' %} {{ rule.dst_wildcard | default('0.0.0.0') }}{% endif %} eq {{ rule.dst_port }}
+ {{ rule.action }} {{ rule.protocol }} {{ addr_wildcard(rule.src, rule.src_wildcard | default('0.0.0.0')) }} {{ addr_wildcard(rule.dst, rule.dst_wildcard | default('0.0.0.0')) }} eq {{ rule.dst_port }}
 
 {% else %}
- {{ rule.action }} {{ rule.protocol }} {{ rule.src }}{% if rule.src != 'any' %} {{ rule.src_wildcard | default('0.0.0.0') }}{% endif %} {{ rule.dst }}{% if rule.dst != 'any' %} {{ rule.dst_wildcard | default('0.0.0.0') }}{% endif %}
+ {{ rule.action }} {{ rule.protocol }} {{ addr_wildcard(rule.src, rule.src_wildcard | default('0.0.0.0')) }} {{ addr_wildcard(rule.dst, rule.dst_wildcard | default('0.0.0.0')) }}
 
 {% endif %}
 !
