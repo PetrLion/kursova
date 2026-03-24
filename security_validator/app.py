@@ -849,6 +849,40 @@ def api_apply_acl():
     socket.emit("log",{"msg":"⚡ ACL правила застосовано на R3 та R4","color":"#3fb950"})
     return jsonify({"message":"✅ ACL правила застосовано"})
 
+@app.route("/api/topology_update", methods=["POST"])
+def api_topology_update():
+    """
+    Receives live topology data pushed by gns3_topology_creator.py.
+    Updates internal state and broadcasts a real-time update to all
+    connected WebSocket clients.
+    """
+    from flask import request as req
+    data = req.get_json(silent=True) or {}
+    topo = data.get("topology", {})
+    pid  = data.get("project_id", "")
+
+    if topo:
+        state["topology"]    = topo
+        state["gns3_online"] = True
+        if pid:
+            state["project_id"] = pid
+        socket.emit("topology_update", {
+            "topology":   topo,
+            "project_id": pid,
+            "source":     data.get("source", "external"),
+            "timestamp":  data.get("timestamp", ""),
+        })
+        socket.emit("log", {
+            "msg":   "🗺️ Топологію оновлено з gns3_topology_creator",
+            "color": "#3fb950",
+        })
+        # Trigger a background scan so configs are also refreshed
+        if not state["scanning"]:
+            threading.Thread(target=do_scan, daemon=True).start()
+        return jsonify({"status": "ok", "nodes": len(topo.get("nodes", []))})
+
+    return jsonify({"status": "no_topology"}), 400
+
 @app.route("/api/reports")
 def api_reports():
     reports = []
