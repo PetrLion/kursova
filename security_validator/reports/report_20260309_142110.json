@@ -1,0 +1,275 @@
+{
+  "timestamp": "20260309_142110",
+  "summary": {
+    "pass": 20,
+    "fail": 4,
+    "warn": 8,
+    "score": 62
+  },
+  "routers": {
+    "FRR-Router-1": [
+      {
+        "rule_id": "CIS-R3",
+        "title": "No Telnet",
+        "severity": "HIGH",
+        "status": "PASS",
+        "detail": "Telnet не використовується",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R4",
+        "title": "Password Encryption",
+        "severity": "HIGH",
+        "status": "PASS",
+        "detail": "Паролі зашифровані або відсутні",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R5",
+        "title": "ACL on Edge Interfaces",
+        "severity": "HIGH",
+        "status": "FAIL",
+        "detail": "Жодного ACL не знайдено на інтерфейсах",
+        "fix": "ip access-list extended RESTRICT_PC3\n  deny ip 10.0.30.0/24 10.0.42.0/24\n  deny ip 10.0.30.0/24 10.0.41.0/24\n  permit ip any any"
+      },
+      {
+        "rule_id": "CIS-R6",
+        "title": "Logging Enabled",
+        "severity": "MEDIUM",
+        "status": "WARN",
+        "detail": "Логування не налаштоване",
+        "fix": "log syslog\nlog file /var/log/frr/frr.log"
+      },
+      {
+        "rule_id": "CIS-R7",
+        "title": "No IP Redirects",
+        "severity": "MEDIUM",
+        "status": "PASS",
+        "detail": "IP redirects вимкнені",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R8",
+        "title": "No Proxy ARP",
+        "severity": "MEDIUM",
+        "status": "PASS",
+        "detail": "Proxy ARP вимкнений",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R9",
+        "title": "SSH Management",
+        "severity": "LOW",
+        "status": "WARN",
+        "detail": "SSH не знайдено в конфігурації",
+        "fix": "# Налаштуйте SSH на управлінському інтерфейсі"
+      },
+      {
+        "rule_id": "CIS-R10",
+        "title": "Default Route Control",
+        "severity": "LOW",
+        "status": "PASS",
+        "detail": "Default route не розповсюджується через OSPF",
+        "fix": null
+      }
+    ],
+    "FRR-Router-2": [
+      {
+        "rule_id": "CIS-R3",
+        "title": "No Telnet",
+        "severity": "HIGH",
+        "status": "PASS",
+        "detail": "Telnet не використовується",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R4",
+        "title": "Password Encryption",
+        "severity": "HIGH",
+        "status": "PASS",
+        "detail": "Паролі зашифровані або відсутні",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R5",
+        "title": "ACL on Edge Interfaces",
+        "severity": "HIGH",
+        "status": "FAIL",
+        "detail": "Жодного ACL не знайдено на інтерфейсах",
+        "fix": "ip access-list extended RESTRICT_PC3\n  deny ip 10.0.30.0/24 10.0.42.0/24\n  deny ip 10.0.30.0/24 10.0.41.0/24\n  permit ip any any"
+      },
+      {
+        "rule_id": "CIS-R6",
+        "title": "Logging Enabled",
+        "severity": "MEDIUM",
+        "status": "WARN",
+        "detail": "Логування не налаштоване",
+        "fix": "log syslog\nlog file /var/log/frr/frr.log"
+      },
+      {
+        "rule_id": "CIS-R7",
+        "title": "No IP Redirects",
+        "severity": "MEDIUM",
+        "status": "PASS",
+        "detail": "IP redirects вимкнені",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R8",
+        "title": "No Proxy ARP",
+        "severity": "MEDIUM",
+        "status": "PASS",
+        "detail": "Proxy ARP вимкнений",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R9",
+        "title": "SSH Management",
+        "severity": "LOW",
+        "status": "WARN",
+        "detail": "SSH не знайдено в конфігурації",
+        "fix": "# Налаштуйте SSH на управлінському інтерфейсі"
+      },
+      {
+        "rule_id": "CIS-R10",
+        "title": "Default Route Control",
+        "severity": "LOW",
+        "status": "PASS",
+        "detail": "Default route не розповсюджується через OSPF",
+        "fix": null
+      }
+    ],
+    "FRR-Router-3": [
+      {
+        "rule_id": "CIS-R3",
+        "title": "No Telnet",
+        "severity": "HIGH",
+        "status": "PASS",
+        "detail": "Telnet не використовується",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R4",
+        "title": "Password Encryption",
+        "severity": "HIGH",
+        "status": "PASS",
+        "detail": "Паролі зашифровані або відсутні",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R5",
+        "title": "ACL on Edge Interfaces",
+        "severity": "HIGH",
+        "status": "FAIL",
+        "detail": "Жодного ACL не знайдено на інтерфейсах",
+        "fix": "ip access-list extended RESTRICT_PC3\n  deny ip 10.0.30.0/24 10.0.42.0/24\n  deny ip 10.0.30.0/24 10.0.41.0/24\n  permit ip any any"
+      },
+      {
+        "rule_id": "CIS-R6",
+        "title": "Logging Enabled",
+        "severity": "MEDIUM",
+        "status": "WARN",
+        "detail": "Логування не налаштоване",
+        "fix": "log syslog\nlog file /var/log/frr/frr.log"
+      },
+      {
+        "rule_id": "CIS-R7",
+        "title": "No IP Redirects",
+        "severity": "MEDIUM",
+        "status": "PASS",
+        "detail": "IP redirects вимкнені",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R8",
+        "title": "No Proxy ARP",
+        "severity": "MEDIUM",
+        "status": "PASS",
+        "detail": "Proxy ARP вимкнений",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R9",
+        "title": "SSH Management",
+        "severity": "LOW",
+        "status": "WARN",
+        "detail": "SSH не знайдено в конфігурації",
+        "fix": "# Налаштуйте SSH на управлінському інтерфейсі"
+      },
+      {
+        "rule_id": "CIS-R10",
+        "title": "Default Route Control",
+        "severity": "LOW",
+        "status": "PASS",
+        "detail": "Default route не розповсюджується через OSPF",
+        "fix": null
+      }
+    ],
+    "FRR-Router-4": [
+      {
+        "rule_id": "CIS-R3",
+        "title": "No Telnet",
+        "severity": "HIGH",
+        "status": "PASS",
+        "detail": "Telnet не використовується",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R4",
+        "title": "Password Encryption",
+        "severity": "HIGH",
+        "status": "PASS",
+        "detail": "Паролі зашифровані або відсутні",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R5",
+        "title": "ACL on Edge Interfaces",
+        "severity": "HIGH",
+        "status": "FAIL",
+        "detail": "Жодного ACL не знайдено на інтерфейсах",
+        "fix": "ip access-list extended RESTRICT_PC3\n  deny ip 10.0.30.0/24 10.0.42.0/24\n  deny ip 10.0.30.0/24 10.0.41.0/24\n  permit ip any any"
+      },
+      {
+        "rule_id": "CIS-R6",
+        "title": "Logging Enabled",
+        "severity": "MEDIUM",
+        "status": "WARN",
+        "detail": "Логування не налаштоване",
+        "fix": "log syslog\nlog file /var/log/frr/frr.log"
+      },
+      {
+        "rule_id": "CIS-R7",
+        "title": "No IP Redirects",
+        "severity": "MEDIUM",
+        "status": "PASS",
+        "detail": "IP redirects вимкнені",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R8",
+        "title": "No Proxy ARP",
+        "severity": "MEDIUM",
+        "status": "PASS",
+        "detail": "Proxy ARP вимкнений",
+        "fix": null
+      },
+      {
+        "rule_id": "CIS-R9",
+        "title": "SSH Management",
+        "severity": "LOW",
+        "status": "WARN",
+        "detail": "SSH не знайдено в конфігурації",
+        "fix": "# Налаштуйте SSH на управлінському інтерфейсі"
+      },
+      {
+        "rule_id": "CIS-R10",
+        "title": "Default Route Control",
+        "severity": "LOW",
+        "status": "PASS",
+        "detail": "Default route не розповсюджується через OSPF",
+        "fix": null
+      }
+    ]
+  }
+}

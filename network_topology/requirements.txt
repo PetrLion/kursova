@@ -1,0 +1,4 @@
+netmiko==4.4.0
+pyvis==0.3.2
+PyYAML==6.0.2
+paramiko==3.4.0
