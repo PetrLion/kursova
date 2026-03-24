@@ -24,7 +24,7 @@ router ospf
  ospf router-id {{ router_ospf.router_id }}
  log-adjacency-changes detail
 {% for net in router_ospf.networks %}
- network {{ net.prefix }}/{{ 32 - (net.wildcard.split('.') | map('int') | list | sum | log(2) | int) if net.wildcard != '0.0.0.0' else 32 }} area {{ net.area }}
+ network {{ net.prefix }}/{{ net.prefix_len }} area {{ net.area }}
 {% endfor %}
 {% if router_ospf.redistribute_connected %}
  redistribute connected

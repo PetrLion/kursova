@@ -83,7 +83,7 @@ echo "✅ Все запущено!"
 echo "   GNS3 API:  http://localhost:3080"
 echo "   Web UI:    http://localhost:5050"
 if [ "$RUN_ANSIBLE" = true ]; then
-echo "   Ansible:   завершено (лог: /tmp/ansible_gns3.log)"
+    echo "   Ansible:   завершено (лог: /tmp/ansible_gns3.log)"
 fi
 echo "════════════════════════════════════"
 echo ""

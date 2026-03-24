@@ -1,25 +1,22 @@
 ! ACL конфігурація для маршрутизатора {{ router_name }}
 ! Згенеровано Ansible — не редагувати вручну
 !
-{% set seq = namespace(n=10) %}
 {% for rule in router_acl_rules %}
 ip access-list extended {{ rule.name }}
 {% if rule.protocol == 'icmp' %}
- {{ rule.action }} icmp {{ rule.src }} {{ rule.src_wildcard | default('0.0.0.0') if rule.src != 'any' else '' }} {{ rule.dst }} {{ rule.dst_wildcard | default('0.0.0.0') if rule.dst != 'any' else '' }}
+ {{ rule.action }} icmp {{ rule.src }}{% if rule.src != 'any' %} {{ rule.src_wildcard | default('0.0.0.0') }}{% endif %} {{ rule.dst }}{% if rule.dst != 'any' %} {{ rule.dst_wildcard | default('0.0.0.0') }}{% endif %}
+
 {% elif rule.dst_port is defined %}
- {{ rule.action }} {{ rule.protocol }} {{ rule.src }} {{ rule.src_wildcard | default('0.0.0.0') if rule.src != 'any' else '' }} {{ rule.dst }} {{ rule.dst_wildcard | default('0.0.0.0') if rule.dst != 'any' else '' }} eq {{ rule.dst_port }}
+ {{ rule.action }} {{ rule.protocol }} {{ rule.src }}{% if rule.src != 'any' %} {{ rule.src_wildcard | default('0.0.0.0') }}{% endif %} {{ rule.dst }}{% if rule.dst != 'any' %} {{ rule.dst_wildcard | default('0.0.0.0') }}{% endif %} eq {{ rule.dst_port }}
+
 {% else %}
- {{ rule.action }} {{ rule.protocol }} {{ rule.src }} {{ rule.src_wildcard | default('0.0.0.0') if rule.src != 'any' else '' }} {{ rule.dst }} {{ rule.dst_wildcard | default('0.0.0.0') if rule.dst != 'any' else '' }}
+ {{ rule.action }} {{ rule.protocol }} {{ rule.src }}{% if rule.src != 'any' %} {{ rule.src_wildcard | default('0.0.0.0') }}{% endif %} {{ rule.dst }}{% if rule.dst != 'any' %} {{ rule.dst_wildcard | default('0.0.0.0') }}{% endif %}
+
 {% endif %}
 !
 {% endfor %}
 {% for rule in router_acl_rules %}
-{% if rule.direction == 'in' %}
-interface eth0
- ip access-group {{ rule.name }} in
-{% elif rule.direction == 'out' %}
-interface eth1
- ip access-group {{ rule.name }} out
-{% endif %}
+interface {{ rule.interface }}
+ ip access-group {{ rule.name }} {{ rule.direction }}
 {% endfor %}
 !

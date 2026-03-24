@@ -336,15 +336,19 @@ gns3_ospf_config:
       router_id: "1.1.1.1"
       networks:
         - prefix: "10.0.10.0"
+          prefix_len: 30
           wildcard: "0.0.0.3"
           area: 0
         - prefix: "10.0.11.0"
+          prefix_len: 30
           wildcard: "0.0.0.3"
           area: 0
         - prefix: "10.0.12.0"
+          prefix_len: 30
           wildcard: "0.0.0.3"
           area: 0
         - prefix: "1.1.1.1"
+          prefix_len: 32
           wildcard: "0.0.0.0"
           area: 0
       redistribute_connected: true
@@ -352,12 +356,15 @@ gns3_ospf_config:
       router_id: "2.2.2.2"
       networks:
         - prefix: "10.0.10.0"
+          prefix_len: 30
           wildcard: "0.0.0.3"
           area: 0
         - prefix: "10.0.20.0"
+          prefix_len: 24
           wildcard: "0.0.0.255"
           area: 0
         - prefix: "2.2.2.2"
+          prefix_len: 32
           wildcard: "0.0.0.0"
           area: 0
       redistribute_connected: true
@@ -365,12 +372,15 @@ gns3_ospf_config:
       router_id: "3.3.3.3"
       networks:
         - prefix: "10.0.11.0"
+          prefix_len: 30
           wildcard: "0.0.0.3"
           area: 0
         - prefix: "10.0.30.0"
+          prefix_len: 24
           wildcard: "0.0.0.255"
           area: 0
         - prefix: "3.3.3.3"
+          prefix_len: 32
           wildcard: "0.0.0.0"
           area: 0
       redistribute_connected: true
@@ -378,12 +388,15 @@ gns3_ospf_config:
       router_id: "4.4.4.4"
       networks:
         - prefix: "10.0.12.0"
+          prefix_len: 30
           wildcard: "0.0.0.3"
           area: 0
         - prefix: "10.0.40.0"
+          prefix_len: 24
           wildcard: "0.0.0.255"
           area: 0
         - prefix: "4.4.4.4"
+          prefix_len: 32
           wildcard: "0.0.0.0"
           area: 0
       redistribute_connected: true
@@ -403,6 +416,7 @@ gns3_acl_rules:
     dst_port: "80"
     apply_to: "R2"
     direction: "out"
+    interface: "eth1"
 
   - name: "ALLOW_OFFICE_TO_DMZ_HTTPS"
     action: "permit"
@@ -414,6 +428,7 @@ gns3_acl_rules:
     dst_port: "443"
     apply_to: "R2"
     direction: "out"
+    interface: "eth1"
 
   # Заблокувати прямий доступ з restricted до DMZ
   - name: "DENY_RESTRICTED_TO_DMZ"
@@ -425,6 +440,7 @@ gns3_acl_rules:
     dst_wildcard: "0.0.0.255"
     apply_to: "R3"
     direction: "out"
+    interface: "eth1"
 
   # Дозволити ICMP між усіма зонами
   - name: "ALLOW_ICMP_ALL"
@@ -434,6 +450,7 @@ gns3_acl_rules:
     dst: "any"
     apply_to: "R1"
     direction: "in"
+    interface: "eth0"
 
   # Заблокувати Telnet/SSH з DMZ у внутрішні мережі
   - name: "DENY_DMZ_TELNET_INTERNAL"
@@ -446,6 +463,7 @@ gns3_acl_rules:
     dst_port: "23"
     apply_to: "R4"
     direction: "out"
+    interface: "eth0"
 
   - name: "DENY_DMZ_SSH_INTERNAL"
     action: "deny"
@@ -457,3 +475,4 @@ gns3_acl_rules:
     dst_port: "22"
     apply_to: "R4"
     direction: "out"
+    interface: "eth0"
