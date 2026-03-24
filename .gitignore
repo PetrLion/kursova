@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# GNS3 topology creator logs
+gns3_creator_*.log
+
+# Generated project metadata (written at runtime)
+gns3_project.json
+security_validator/gns3_project.json
+
+# GNS3 core dumps / binary artefacts
+network_topology/core.*
+network_topology/os
+
+# Reports (runtime generated)
+security_validator/reports/
+
+# Configs (runtime collected)
+security_validator/configs/*.cfg
+
+# OS
+.DS_Store
+Thumbs.db
